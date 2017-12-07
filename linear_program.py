@@ -8,6 +8,10 @@ Created on Tue Nov 28 23:42:06 2017
 
 from hungarian_method import construct_bipartite
 import numpy as np
+import csv
+from time import time
+
+x = 0
 
 def printA(A):
     Alist = A.astype(int).tolist()
@@ -40,7 +44,9 @@ def makeTableau(A):
     return tableau
 
 def pivot(tableau):
+    global x
     while(np.min(tableau[-1, 0:(tableau[-1].shape[0]-2)]) < 0):
+        x += 1
         col = np.argmin(tableau[-1][0:tableau[-1].shape[0]-2])
         np.seterr(divide='ignore')
         row = -1
@@ -60,6 +66,7 @@ def pivot(tableau):
                 tableau[i] += -tableau[i][col] * tableau[row]
         #print(tableau)
     return tableau
+
 def solve_edge_recur(tab, x, level):
     noneZeros = []
     for i in range(tab.shape[-1]-2):
@@ -96,27 +103,41 @@ def solve_edge(tab):
     
     
     
-def LP(numNLeft, numNRight, edgeLeft):
+def LP(i, numNLeft, numNRight, edgeLeft, f):
+    t1 = time()
     A, edgeIndexPtr = constructA(numNLeft, numNRight, edgeLeft)
     tableau = makeTableau(A)
+    t2 = time()
     final_tableau = pivot(tableau)
-    #print(final_tableau)
-    edgeSolved = solve_edge(final_tableau)
+    t3 = time()
+    #edgeSolved = solve_edge(final_tableau)
+    t4 = time()
+    
     M = {}
+    '''
     temp = 0
     for i in range(A.shape[1]):
         if edgeSolved[i] == 1:
             while(edgeIndexPtr[temp] <= i):
                 temp += 1
             M[temp] = edgeLeft[temp][i-edgeIndexPtr[temp-1]]
+    '''
+    t5 = time()
+    f.writerow([str(i), str(t2-t1), str(t3-t2), str(t4-t3), str(t5-t1), str(x)])
     return M
 
 def main():
-    numNLeft = 10
-    numNRight = 9
-    edgeLeft, edgeRight = construct_bipartite(numNLeft, numNRight, incidentRate = 1, disperseRate = 0)
-    matchings = LP(numNLeft, numNRight, edgeLeft)
-    print(matchings)
+    fileName = 'linear_log.csv'
+    file = open(fileName, 'w')
+    f = csv.writer(file, delimiter=',')
+    f.writerow(['nodes number', 'make tableau time', 'pivoting time', 'equation solving time', 'total time', 'pivoting steps'])
+    for i in range(1, 201):
+        print(i)
+        numNLeft = i
+        numNRight = i
+        edgeLeft, edgeRight = construct_bipartite(numNLeft, numNRight, incidentRate = 1, disperseRate = 0)
+        matchings = LP(i, numNLeft, numNRight, edgeLeft, f)
+    file.close()
     
 
 if __name__ == "__main__":

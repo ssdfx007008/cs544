@@ -9,8 +9,14 @@ Created on Sun Nov 26 12:40:39 2017
 import random
 import sys
 import numpy as np
+from time import time
 from scipy.stats import truncnorm
+import csv
 
+x = 0
+treeT = 0
+augT = 0
+   
 class node(object):
     def __init__(self, data):
         self.children = []
@@ -50,7 +56,10 @@ def printPath(path):
     print('[%s]' %(', '.join(map(str, temp))))
 
 def DFS(s, t, path):
+    global x
+    x += 1
     path.append(s)
+    #printPath(path)
     s.indicator = 1
     if s == t:
         return 1
@@ -74,8 +83,17 @@ def printNode(Ns):
             temp.append(ele.data)
         print('%d: [%s]' %(item.data, ', '.join(map(str, temp))))
     
-        
+def whetherNodeTot(numNLeft, numNRight, nodes, t):
+    for i in range(numNLeft + 1, numNLeft + numNRight+1):
+        for item in nodes[i].children:
+            if item == t:
+                return 1
+    return 0
+
 def findAugmentingPath(numNLeft, numNRight, edgeLeft, M):
+    global treeT
+    global augT
+    t1 = time()
     s = node(-1)
     t = node(-2)
     nodes = []
@@ -98,8 +116,13 @@ def findAugmentingPath(numNLeft, numNRight, edgeLeft, M):
     for i in range(numNLeft + 1, numNLeft + numNRight+1):
         if len(nodes[i].children) == 0:
             nodes[i].children.append(t)
+    t2 = time()
     augPath = []
-    if 0 == DFS(s, t, augPath):
+    if 0 == whetherNodeTot(numNLeft, numNRight, nodes, t) or 0 == DFS(s, t, augPath):
+        t3 = time()
+        treeT += t2-t1
+        augT = t3 -t2
+        
         return None
     dicPath = {}
     for i in range(len(augPath)):
@@ -111,6 +134,9 @@ def findAugmentingPath(numNLeft, numNRight, edgeLeft, M):
         if augPath[i].data > numNLeft and augPath[i].data <= numNLeft+numNRight:
             if augPath[i+1].data > 0:
                 dicPath[augPath[i+1].data] = [augPath[i].data]
+    t3 = time()
+    treeT += t2-t1
+    augT = t3 -t2
     return dicPath
 
 def exAdd(M, augPath):
@@ -134,20 +160,39 @@ def exAdd(M, augPath):
                     newM[item] = itemInItem
     return newM
                     
-def hungrian(numNLeft, numNRight, edgeLeft):
+def hungrian(ith, numNLeft, numNRight, edgeLeft, f):
+    
+    t1 = time()
     M = {}
+    i = 0
+    global x
+    x = 0
+    global treeT
+    global augT
+    treeT = 0
+    augT = 0
     augPath = findAugmentingPath(numNLeft, numNRight, edgeLeft, M)
     while(augPath != None):
+        i += 1
         M = exAdd(M, augPath)
-        augPath = findAugmentingPath(numNLeft, numNRight, edgeLeft, M)        
+        augPath = findAugmentingPath(numNLeft, numNRight, edgeLeft, M) 
+    t2 = time()
+    f.writerow([str(ith), str(treeT), str(augT), str(t2-t1), str(i), str(x)])
     return M
 
 def main():
-    numNLeft = 5
-    numNRight = 5
-    edgeLeft, edgeRight = construct_bipartite(numNLeft, numNRight, incidentRate = 1, disperseRate = 0)
-    matchings = hungrian(numNLeft, numNRight, edgeLeft)
-    print(matchings)
+    fileName = 'hungrian_log.csv'
+    file = open(fileName, 'w')
+    f = csv.writer(file, delimiter=',')
+    f.writerow(['nodes number', 'tree construction time', 'find aug path time', 'total time', 'aug path number', 'traverse steps'])
+    for i in range(1, 201):
+        print(i)
+        numNLeft = i
+        numNRight = i
+        edgeLeft, edgeRight = construct_bipartite(numNLeft, numNRight, incidentRate = 1, disperseRate = 0)
+        matchings = hungrian(i, numNLeft, numNRight, edgeLeft, f)
+    file.close()
+
     
 if __name__ == "__main__":
     main()
