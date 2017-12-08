@@ -185,7 +185,7 @@ def main():
     file = open(fileName, 'w')
     f = csv.writer(file, delimiter=',')
     f.writerow(['nodes number', 'tree construction time', 'find aug path time', 'total time', 'aug path number', 'traverse steps'])
-    for i in range(1, 201):
+    for i in range(1, 501):
         print(i)
         numNLeft = i
         numNRight = i
